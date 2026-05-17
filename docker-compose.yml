@@ -15,6 +15,8 @@ services:
       - STREAMLIT_SERVER_HEADLESS=true
       - STREAMLIT_SERVER_ENABLE_CORS=false
       - STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=false
+      # xAI API key — required for Grok AI Insights and Grok Build CLI
+      - XAI_API_KEY=${XAI_API_KEY:-}
     volumes:
       # Optional: Mount a volume for persistent data if needed
       - ./data:/app/data
@@ -34,6 +36,25 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # Grok Build CLI service — run agentic coding tasks against the repo
+  # Usage: docker compose run --rm grok-build -p "your prompt here"
+  grok-build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: grok-build
+    working_dir: /app
+    entrypoint: ["grok-build"]
+    command: ["--help"]
+    environment:
+      - XAI_API_KEY=${XAI_API_KEY:-}
+    volumes:
+      - .:/app
+    networks:
+      - csv-tool-network
+    profiles:
+      - dev
 
 networks:
   csv-tool-network:
