@@ -7,9 +7,6 @@ USER root
 # Set working directory
 WORKDIR /app
 
-# Install Grok Build CLI
-RUN curl -fsSL https://x.ai/cli/install.sh | bash
-
 # Copy requirements first for better caching
 COPY pyproject.toml ./
 
@@ -46,8 +43,6 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV STREAMLIT_SERVER_HEADLESS=true
 ENV STREAMLIT_SERVER_PORT=8501
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
-# xAI API key for Grok Build CLI and Grok AI features (set at runtime)
-ENV XAI_API_KEY=""
 
 # Run the application
 CMD ["streamlit", "run", "app.py", \

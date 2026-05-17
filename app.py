@@ -1,4 +1,3 @@
-import os
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -6,7 +5,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 from io import BytesIO
 import base64
-from openai import OpenAI
 from utils.data_processor import DataProcessor
 from utils.comparison_engine import ComparisonEngine
 
@@ -493,7 +491,7 @@ def show_single_dataset():
 def show_comparison_interface():
     df1, df2 = st.session_state.df1, st.session_state.df2
 
-    tab_config, tab_preview, tab_grok = st.tabs(["Comparison", "Dataset Preview", "Grok AI Insights"])
+    tab_config, tab_preview = st.tabs(["Comparison", "Dataset Preview"])
 
     with tab_config:
         st.markdown('<div class="section-header">Configuration</div>', unsafe_allow_html=True)
@@ -588,12 +586,6 @@ def show_comparison_interface():
             {df2.shape[0]:,} rows &middot; {df2.shape[1]} columns (showing first 50 rows)
         </div>
         """, unsafe_allow_html=True)
-
-    with tab_grok:
-        if st.session_state.comparison_results is not None:
-            show_grok_insights(st.session_state.comparison_results)
-        else:
-            st.info("Run a comparison first, then come back here for Grok AI Insights.")
 
 
 def show_comparison_results():
@@ -859,58 +851,6 @@ def show_how_to_page():
         </ul>
     </div>
     """, unsafe_allow_html=True)
-
-
-def get_grok_client():
-    api_key = os.environ.get("XAI_API_KEY", "")
-    if not api_key:
-        return None
-    return OpenAI(api_key=api_key, base_url="https://api.x.ai/v1")
-
-
-def show_grok_insights(results):
-    st.markdown('<div class="section-header">Grok AI Insights</div>', unsafe_allow_html=True)
-
-    client = get_grok_client()
-    if client is None:
-        st.info("Set the `XAI_API_KEY` environment variable to enable Grok AI Insights.")
-        return
-
-    stats = results["stats"]
-    sample_unmatched = (
-        results["combined_data"][results["combined_data"]["_match_status"] == "Unmatched"]
-        .head(10)
-        .to_csv(index=False)
-    )
-
-    prompt = f"""You are a data analyst. A CSV comparison produced these results:
-- Total records: {stats['total_records']}
-- Matched: {stats['matched_count']} ({stats['match_percentage']:.1f}%)
-- Unmatched: {stats['unmatched_count']} ({stats['unmatch_percentage']:.1f}%)
-- Duplicate keys in lookup dataset: {stats['duplicate_keys']}
-
-Sample unmatched records (CSV):
-{sample_unmatched}
-
-Provide 3–5 concise, actionable insights. Focus on likely causes of mismatches, data quality issues, and recommendations to improve the match rate. Use plain language."""
-
-    if st.button("Generate Grok AI Insights", type="primary"):
-        with st.spinner("Asking Grok..."):
-            try:
-                response = client.chat.completions.create(
-                    model="grok-3",
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=600,
-                )
-                insight_text = response.choices[0].message.content
-                st.markdown(
-                    f'<div class="card"><p style="font-family: Roboto, sans-serif; font-size: 0.9rem; '
-                    f'color: {COLORS["text"]}; line-height: 1.8; margin: 0; white-space: pre-wrap;">'
-                    f"{insight_text}</p></div>",
-                    unsafe_allow_html=True,
-                )
-            except Exception as e:
-                st.error(f"Grok API error: {e}")
 
 
 def main():
